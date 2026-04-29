@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Filter</title>
+<meta name="google" content="notranslate">
+
+<html lang="zh-Hant">
+
+<!-- face-api -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  background:#000;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+  font-family: "PingFang TC", "Noto Sans TC", sans-serif;
+}
+
+/* 9:16 */
+#viewport{
+  position:absolute;
+  width:1080px;
+  height:1920px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) ;
+  overflow:hidden;
+  background:#000;
+}
+#viewport-scale{
+  width:1080px;
+  height:1920px;
+  transform:scale(var(--scale-factor,1));
+
+}
+/* 攝影機 */
+video{
+  position:absolute;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transform: scaleX(-1); /* ✅ 鏡像 */
+}
+
+/* 背景框 */
+#frame{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;   /* 🔥 關鍵 */
+  pointer-events:none;
+}
+#faceText{
+  position:absolute;
+  left: 0;              /* 🔥 關鍵：給一個明確起點 */
+  top: 0;
+  width: auto;          /* 🔥 不能用 % */
+  max-width: none;
+  pointer-events:none;
+  z-index:10;
+
+}
+
+/* 左右移動文字 */
+#floatText{
+  width:100%;
+  height:100%;
+
+  /* 三件事一起做：抖動 + 透明度 */
+  animation:
+    lagJitter 0.6s linear infinite,
+    flickerOpacity 1.2s steps(1) infinite;
+}
+
+
+#floatWrap{
+  position:absolute;
+  top:40%;
+  left:50%;
+  width:160%;
+  height:140%;
+  transform:translate(-50%, -50%);
+  animation: slideLR 3s linear infinite alternate;
+  pointer-events:none;
+}
+@keyframes flickerOpacity{
+  0%   { opacity:0.7; }
+  20%  { opacity:0; }
+  35%  { opacity:0.7; }
+  55%  { opacity:0.2; }
+  70%  { opacity:0.7; }
+  85%  { opacity:0; }
+  100% { opacity:0.7; }
+}
+
+/* 左右整個滑動（主運動） */
+@keyframes slideLR{
+  from { transform:translate(-60%, -50%); }
+  to   { transform:translate(-10%, -50%); }
+}
+
+/* 當機感（抖、不規則） */
+@keyframes lagJitter{
+  0%   { transform:translateX(0); }
+  20%  { transform:translateX(-6px); }
+  40%  { transform:translateX(4px); }
+  60%  { transform:translateX(-3px); }
+  80%  { transform:translateX(2px); }
+  100% { transform:translateX(0); }
+}
+
+
+#canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:9;   /* 在 video 上、frame 下 */
+}
+
+</style>
+</head>
+
+<body>
+
+    <div id="viewport">
+        <div id="viewport-scale">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas"></canvas>
+        <div id="floatWrap">
+            <img id="floatText" src="image/text2.png">
+          </div>
+          
+        <img id="frame" src="image/11.png">
+      </div>
+      </div><script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+      
+      <script src="textFilter.js"></script>
+      
+    
+
+</body>
+</html>

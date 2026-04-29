@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goodmodel</title>
+
+  <!-- A-Frame / MindAR / MediaPipe -->
+ <script src="aframe.min.js"></script>
+ <script src="mindar-face-aframe.prod.js"></script> 
+ <!-- 🟢 必須加入這行，程式才能執行截圖功能 -->
+ <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+  <!-- MediaPipe（臉 + 手） -->
+ <script src="camera_utils.js"></script>
+ <script src="face_mesh.js"></script>
+
+  <link rel="stylesheet" href="./style.css" />
+  <style>
+    /* 1. 圖片容器，確保定位基準 */
+    #click-to-start {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: opacity 0.5s ease;
+        perspective: 1000px; 
+    }
+
+    #click-to-start img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+
+    .overlay-box {
+        position: absolute;
+        top: 10%; /* 距離頂部 20%，接近中間上方 */
+        left: 52%;
+        transform: translate(-50%, -50%); /* 精確置中 */
+        
+        /* 調整尺寸與內邊距，使其更像長方形 */
+        padding: 20px 50px;
+        min-width: 600px; /* 設置最小寬度 */
+        text-align: center;
+
+        /* 背景：半透明黑色，帶一點深藍 */
+        background-color: rgba(0, 0, 0, 0.85); 
+        
+        /* 文字樣式 */
+        color: #ffffff;
+        font-size:36px; /* 稍微放大文字 */
+        font-weight:50px;
+        font-family: '微軟正黑體', sans-serif; 
+        letter-spacing: 2px; /* 字距 */
+        
+        box-shadow: 
+            0 0 20px rgba(255, 255, 255, 0.3), 
+            0 0 30px rgba(113, 113, 113, 0.5);   
+        overflow: hidden;
+        z-index: 1;
+    }
+
+    /* 3. 💡 [新增] 流動線條效果 (使用偽元素 ::before) */
+    .overlay-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        
+        /* 創建一條掃描線 */
+        background: linear-gradient(
+            to right,
+            transparent 0%,
+            rgba(0, 0, 0, 0) 20%,
+            rgba(255, 255, 255, 0.8) 40%, /* 掃描線核心 */
+            rgba(4, 4, 4, 0) 20%,
+            transparent 100%
+        );
+        
+        /* 動畫設定：向右無限循環流動 */
+        animation: scanLineFlow 2s linear infinite;
+        opacity: 0.5;
+        z-index: -1; /* 放在文字後方 */
+    }
+
+    /* 4. [新增] 增強邊框的霓虹流動感 (使用偽元素 ::after) */
+    .overlay-box::after {
+        content: '';
+        position: absolute;
+        inset: -2px; /* 稍微超出邊框 */
+        padding: 2px; /* 邊框厚度 */
+        
+        /* 霓虹漸層邊框 */
+        background: linear-gradient(
+            45deg, 
+            rgb(255, 255, 255) 0%, 
+            rgba(33, 33, 33, 0.5) 50%, 
+            rgb(255, 255, 255) 100%
+        );
+        
+        /* 遮罩，只顯示邊框部分 */
+        -webkit-mask: 
+            linear-gradient(#fff 0 0) content-box, 
+            linear-gradient(#fff 0 0);
+        mask: 
+            linear-gradient(#fff 0 0) content-box, 
+            linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        
+        /* 邊框旋轉流動動畫 */
+        animation: borderRotate 3s linear infinite;
+        z-index: -2;
+    }
+
+    /* 5. 定義動畫 */
+    
+    /* 掃描線橫向流動 */
+    @keyframes scanLineFlow {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    /* 邊框漸層旋轉 (需要更高級的 CSS 技巧，這裡用簡化版) */
+    /* 這裡使用 opacity 呼吸效果來模擬流動感，效果更接近圖片 */
+    @keyframes borderRotate {
+        0%, 100% { opacity: 1; box-shadow: 0 0 15px rgba(255, 255, 255, 0.7); }
+        50% { opacity: 0.5; box-shadow: 0 0 25px rgb(255, 255, 255); }
+    }
+    
+  
+    
+    .overlay-box span {
+        animation: textPulse 1s infinite;
+    }
+
+  </style>
+</head>
+
+<body>
+          <!-- 只放 UI -->
+          <div id="ar-viewport">
+            <div id="click-to-start">
+                <img src="./image/start.jpg" alt="點擊開始體驗">
+                
+                <div class="overlay-box">
+                    <span>按下桌上白色按鍵，開始體驗</span>
+                </div>
+            </div>
+
+    <div id="intro-container" class="full-screen-overlay">
+      <video
+        id="intro-video"
+        src="Animation1.mp4"
+        autoplay
+        muted
+        playsinline
+        class="media-content">
+      </video>
+    </div>
+    <audio id="scan-music" src="music1.mp3" preload="auto" loop></audio>
+
+    <!-- ===============================
+         AR Scene（MindAR）
+    =============================== -->
+    <a-scene
+      id="ar-scene"
+      mindar-face="uiLoading:no; uiScanning:no; disableFaceMesh:true;"
+      vr-mode-ui="enabled:false"
+      renderer="colorManagement:true">
+      <a-camera active="false"></a-camera>
+    </a-scene>
+<!-- ===============================
+     01 文字敘事畫面（打字機）
+=============================== -->
+<div id="tv-blackout"></div>
+<div id="typewriter-screen" class="full-screen-overlay">
+  <img src="image/01.png" class="media-content">
+  <div id="typewriter-text"></div>
+  <div id="loading-box" style="display:none;">
+    <div id="loading-text">系統正在載入模型標準</div>
+    <div id="progress-track">
+      <div id="progress-bar"></div>
+    </div>
+    <div id="progress-text">0%</div>
+  </div>
+</div>
+
+<!-- ===============================
+     01-2 評分生成前（第二段敘事頁）
+=============================== -->
+<div id="typewriter2-screen" class="full-screen-overlay" style="display:none;">
+  <img src="image/01.png" class="media-content" alt="pre rating bg">
+  <div id="typewriter2-text"></div>
+  <div id="loading2-box" style="display:none;">
+    <div id="loading2-text">評分表生成中...</div>
+    <div id="progress2-track">
+      <div id="progress2-bar"></div>
+    </div>
+    <div id="progress2-text">0%</div>
+  </div>
+  
+</div>
+
+
+    <!-- ===============================
+         02 對準框（主攝影畫面框）
+    =============================== -->
+    <div id="camera-fade"></div>
+
+    <div id="camera-overlay">
+      <img src="image/03.png" alt="camera frame">
+      <!-- ✅ 倒數數字會由 JS 動態加在這裡（mk-countdown） -->
+    </div>
+
+    <!-- ===============================
+         03 掃描畫面（背景 + 倒數 + 掃描線）
+    =============================== -->
+  
+    <div id="scan-overlay">
+      <div id="scan-line-h"></div>
+      <div id="scan-line-v"></div>
+      <div id="scan-countdown"></div>
+      <div id="face-rect">
+        <div id="random-data"></div>
+      </div>
+    </div>
+   
+    <!-- ===============================
+         05 評分表
+    =============================== -->
+<div id="rating-overlay" style="display:none; position:fixed; inset:0; background:black; z-index:10000; overflow:hidden; justify-content:center; align-items:center;">
+    
+    <div id="rating-content-wrapper" style="position: relative; height: 100vh; width: auto; aspect-ratio: 9/16;">
+        
+        <img id="rating-bg" src="image/score-01.jpg" style="height: 100%; width: 100%; display: block; z-index: 1;">
+
+<img src="image/deco-01.png" class="hud-deco" id="hud-face">
+  <img src="image/deco-02.png" class="hud-deco" id="hud-eye">
+  <img src="image/deco-03.png" class="hud-deco" id="hud-nose">
+  <img src="image/deco-04.png" class="hud-deco" id="hud-mouth">
+
+        <div id="user-photo-container" style="
+            position: absolute;
+            top: 11.5%; 
+            left: 7%; 
+            width: 39.5%; /* 根據你的 113mm/1080px 換算，大約是 39-40% */
+            height: 29.5%; /* 根據你的 150mm/1920px 換算，大約是 29-30% */
+            z-index: 100;
+            overflow: hidden;
+        ">
+            <img id="user-captured-photo" src="" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+
+        <canvas id="crop-eye" class="feature-box"></canvas>
+        <canvas id="crop-nose" class="feature-box"></canvas>
+        <canvas id="crop-mouth" class="feature-box"></canvas>
+
+    </div>
+</div>
+  <!-- ===============================
+       JS
+  =============================== -->
+  <canvas id="capture-canvas" style="display:none;"></canvas>
+  <script src="script.js"></script>
+
+</body>
+</html>

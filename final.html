@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>列印選擇 - 質感流動邊框版</title>
+    <script src="qrcode.min.js"></script>
+    <style>
+    /* 1. 基礎佈局：確保電視全屏不捲動 */
+/* ================================================= */
+/* 1. 全域佈局與背景 (Body & Global Layout) */
+/* ================================================= */
+body { 
+    background: #000; 
+    color: #fff; 
+    font-family: sans-serif; 
+    text-align: center; 
+    margin: 0; 
+    padding: 0; 
+    overflow: hidden; /* 強制消除捲軸 */
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 垂直置中 */
+    align-items: center;     /* 水平置中 */
+}
+
+/* 頁面背景圖 */
+.ig-page-bg { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh; 
+    object-fit: cover; 
+    z-index: -1; 
+    pointer-events: none; 
+    opacity: 0.6; 
+}
+
+/* 標題與描述 */
+h1 { 
+    font-size: 3vh; 
+    margin-top: 0; 
+    margin-bottom: 5px; 
+    font-weight: 300; 
+    letter-spacing: 2px; 
+}
+
+p.desc { 
+    font-size: 1.6vh; 
+    margin-bottom: 30px; 
+    font-weight: 300; 
+    letter-spacing: 2px; 
+    opacity: 0.8; 
+}
+
+/* ================================================= */
+/* 2. 照片網格區 (Grid & Photo Items) */
+/* ================================================= */
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3vh 40px; 
+    width: fit-content; 
+    margin: 0 auto;
+}
+
+.item {
+    background: #111; 
+    padding: 12px; 
+    border: 1px solid #333; 
+    cursor: pointer;
+    position: relative; 
+    transition: 0.3s;
+    height: 30vh;        /* 調整此高度可縮放整體大小 */
+    aspect-ratio: 9 / 16; 
+    overflow: hidden; 
+    display: flex; 
+    flex-direction: column;
+}
+
+/* ✨ 流動邊框動畫效果 */
+.item::before {
+    content: ""; 
+    position: absolute; 
+    top: -50%; 
+    left: -50%; 
+    width: 200%; 
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 300deg, #fff 360deg);
+    z-index: 1; 
+    animation: flowLine 2.5s linear infinite; 
+    opacity: 0; 
+    transition: opacity 0.3s;
+}
+
+.item:hover::before, 
+.item.selected::before { 
+    opacity: 1; 
+}
+
+.item::after { 
+    content: ""; 
+    position: absolute; 
+    inset: 1px; 
+    background: #111; 
+    z-index: 2; 
+}
+
+@keyframes flowLine { 
+    from { transform: rotate(0deg); } 
+    to { transform: rotate(360deg); } 
+}
+
+/* 選中狀態 */
+.item.selected {
+    border-color: #fff;
+    background: #1a1a1a; 
+}
+
+/* 內部照片設定 */
+.photo { 
+    width: 90%;
+    height: auto;
+    max-height: 80%;
+    object-fit: contain; 
+    position: absolute; 
+    top: 45%;
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    background: #000;
+}
+
+/* 外框裝飾 */
+.frame-overlay {
+    position: absolute;
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%; 
+    background-image: url('image/frame3.png');
+    background-size: 100% 100%; 
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* 勾選框 */
+.checkbox { 
+    position: absolute; 
+    top: 15px; 
+    right: 15px; 
+    width: 20px; 
+    height: 20px; 
+    border: 1px solid #fff; 
+    z-index: 6; 
+}
+
+.item.selected .checkbox { 
+    background: #fff; 
+}
+
+.item.selected .checkbox::after { 
+    content: "✓"; 
+    color: #000; 
+    font-weight: bold; 
+    line-height: 20px; 
+    display: block; 
+    text-align: center; 
+    font-size: 14px;
+}
+
+/* 項目標籤 */
+.item-label { 
+    position: absolute; 
+    bottom: 12px; 
+    width: 100%; 
+    left: 0; 
+    font-size: 1.4vh; 
+    font-weight: 300; 
+    z-index: 5; 
+    letter-spacing: 2px; 
+}
+
+/* ================================================= */
+/* 3. 底部區域與按鈕 (Bottom Area & Buttons) */
+/* ================================================= */
+.bottom-area { 
+    width: calc(18vh * 2 + 40px); /* 自動計算寬度 = (單張寬 * 2) + 間距 */
+    margin-top: 3vh;
+    display: flex; 
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 40px; 
+}
+
+.btn-section { 
+    display: flex; 
+    flex-direction: row; 
+    gap: 20px; 
+    flex: 1;
+    width: 100%;
+}
+
+#printBtn, #downloadBtn {
+    width: 100%; 
+    height: 5vh; 
+    min-height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 300;
+    font-size: 1.8vh;
+    letter-spacing: 2px;
+    cursor: pointer; 
+    border-radius: 0; 
+    transition: 0.3s;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.8); 
+}
+
+#printBtn:hover, #downloadBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
+}
+
+/* ================================================= */
+/* 4. 列印設定 (Print Styles) */
+/* ================================================= */
+@media print {
+    /* 1. 隱藏不必要的介面 */
+    h1, p.desc, .btn-section, .bottom-area, .ig-page-bg {
+        display: none !important;
+    }
+
+    /* 2. 僅顯示選中的照片 */
+    .item:not(.selected) {
+        display: none !important;
+    }
+
+    /* 3. 隱藏裝飾元件 */
+    .checkbox, .item::before, .item::after {
+        display: none !important;
+    }
+
+    /* 4. 黑白/省墨設定 */
+    body { 
+        background: #fff !important; 
+        color: #000 !important;
+    }
+
+    /* 5. 調整版面置中 */
+    #viewport {
+        transform: none !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    .grid {
+        display: flex !important;
+        justify-content: center !important;
+        gap: 20px !important;
+        margin: 0 auto !important;
+    }
+
+    .item.selected {
+        border: none !important; 
+        background: transparent !important;
+    }
+}
+</style>
+</head>
+<body>
+
+<img id="post-bg" class="ig-page-bg" src="image/final-bg.png">
+<h1>MODEL1_請選擇照片</h1>
+<p class="desc">點擊下載 即可領取數位照片</p>
+<div class="grid">
+    <div class="item" onclick="toggle(this)" data-id="score">
+        <img id="img-score" class="photo" src="image/05.png">
+        <div class="frame-overlay"></div>
+        <div class="checkbox"></div>
+        <div class="item-label">01＿評分結果表</div>
+    </div>
+    <div class="item" onclick="toggle(this)" data-id="makeup">
+        <img id="img-makeup" class="photo" src="image/05.png">
+        <div class="frame-overlay"></div>
+        <div class="checkbox"></div>
+        <div class="item-label">02＿美妝濾鏡</div>
+    </div>
+    <div class="item" onclick="toggle(this)" data-id="text">
+        <img id="img-text" class="photo" src="image/05.png">
+        <div class="frame-overlay"></div>
+        <div class="checkbox"></div>
+        <div class="item-label">03＿文字濾鏡</div>
+    </div>
+    <div class="item" onclick="toggle(this)" data-id="post">
+        <img id="img-post" class="photo" src="image/05.png">
+        <div class="frame-overlay"></div>
+        <div class="checkbox"></div>
+        <div class="item-label">04_社群貼文介面</div>
+    </div>
+</div>
+
+<div class="bottom-area">
+    <div class="btn-section">
+        <button id="printBtn" onclick="doPrint()">
+         <span>列印紙本</span> 
+        </button>
+        <button id="downloadBtn" onclick="doDownload()">
+            <span>下載照片</span> 
+        </button>
+
+    </div>
+</div>
+
+<script>
+    window.onload = () => {
+        // 1. 載入照片預覽
+       const photoMapping = {
+        'score': 'photo_01', // 評分表
+        'makeup': 'photo_02', // 美妝
+        'text': 'photo_03',  // 文字
+        'post': 'photo_04'   // 社群
+    };;
+    Object.keys(photoMapping).forEach(key => {
+        const data = localStorage.getItem(photoMapping[key]);
+        const imgEl = document.getElementById('img-' + key);
+        if (imgEl && data) {
+            imgEl.src = data;
+            console.log(`✅ 成功載入 ${key} 照片`);
+        } else {
+            console.warn(`❌ 找不到 ${key} 的存檔 (${photoMapping[key]})`);
+        }
+    });
+
+
+    };
+
+    function toggle(el) {
+        el.classList.toggle('selected');
+    }
+
+    // 修正過的合成函數：完整顯示 9:16 在 4:6 畫布上 (不切割)
+    async function compositeImage(imgElement) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 4x6 標準解析度
+            canvas.width = 1200; 
+            canvas.height = 1800;
+
+            // 讀取框
+            const frameImg = new Image();
+            frameImg.src = 'image/frame3.png'; 
+            frameImg.onload = () => {
+             // 背景填白
+             ctx.fillStyle = "#ffffff";
+             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // ✨ 調整縮放比例：讓圖片只佔畫布高度的 9% (預留上下安全區)
+            const safeScale = 0.90; 
+            const targetHeight = canvas.height * safeScale;
+            const targetWidth = (targetHeight * 9) / 16; 
+
+            // ✨ 計算置中座標
+            const offsetLeft = (canvas.width - targetWidth) / 2;
+            const offsetTop = (canvas.height - targetHeight) / 2;
+
+            // 畫照片 (放在安全區域內)
+            ctx.drawImage(imgElement, offsetLeft, offsetTop, targetWidth, targetHeight);
+            
+            // 畫框 (跟著照片一起縮小置中)
+            ctx.drawImage(frameImg, offsetLeft, offsetTop, targetWidth, targetHeight);
+            
+            resolve(canvas.toDataURL('image/jpeg', 0.95));
+            };
+        });
+    }
+// 定義列印按鈕的功能
+// 🟢 執行「下載照片」按鈕的功能
+async function doDownload() {
+    const selectedItems = document.querySelectorAll('.item.selected');
+    
+    if (selectedItems.length === 0) {
+        alert("請至少選擇一張照片！");
+        return;
+    }
+
+    console.log("準備處理下載存檔...");
+    
+    // 告知下一頁（ending.html）：「不要」啟動自動列印
+    localStorage.setItem("need_print", "false");
+    
+    // 如果這裡有需要執行照片合成 (compositeImage)，可以加在這裡
+    // 執行完後跳轉
+    window.location.href = "ending.html"; 
+}
+
+// 🟢 執行「列印紙本」按鈕的功能 (整合後的版本)
+function doPrint() {
+    const selectedItems = document.querySelectorAll('.item.selected');
+    
+    if (selectedItems.length === 0) {
+        alert("請至少選擇一張照片進行列印！");
+        return;
+    }
+
+    // 🟢 1. 直接在這裡觸發列印
+    // 注意：如果是 Mac 終端機模式，這裡會直接出紙
+    window.print(); 
+
+    // 🟢 2. 告訴 Ending 頁面「不需要再印了」
+    localStorage.setItem("need_print", "false"); 
+
+    // 🟢 3. 跳轉到 Ending 頁面讓使用者掃描下載
+    window.location.href = "ending.html"; 
+}
+
+</script>
+
+</body>
+</html>

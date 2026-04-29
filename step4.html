@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>模範生 – 系統升級提示</title>
+
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  background:#000;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+}
+
+/* 與前頁相同尺寸 */
+#viewport{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:1080px;
+  height:1920px;
+  transform:translate(-50%,-50%) scale(var(--scale-factor,1));
+  overflow:hidden;
+  background:#000;
+}
+
+/* 背景 01.png */
+.bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* 🟢 最終版 type-text（避免上面被覆蓋） */
+#type-text{
+  position:absolute;
+  left:53%;
+  top:47%;
+  transform:translateX(-50%);
+  width:70%;
+  color:#ffffff;
+
+  font-family:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",Arial,sans-serif;
+
+  font-size:30px;
+  letter-spacing:5px;
+  line-height:44px;
+  font-weight:300;
+
+  white-space:pre-line;
+}
+</style>
+</head>
+
+<body>
+<div id="viewport">
+
+  <img class="bg" src="image/09.png">
+
+  <div id="type-text"></div>
+
+</div>
+
+<script>
+/* ======================
+   9:16 SCALE
+====================== */
+function resize(){
+  const s = Math.min(
+    window.innerWidth / 1080,
+    window.innerHeight / 1920
+  );
+  document.documentElement.style.setProperty("--scale-factor", s);
+}
+resize();
+window.addEventListener("resize", resize);
+
+
+/* ======================
+   打字機
+====================== */
+const TEXT = `
+> 恭喜解鎖美妝程序
+
+以下規則請熟讀
+
+濾鏡使用切換請按下手上的「藍芽按鈕」
+
+共有「5」款濾鏡供選擇
+只有「30秒」決定最終妝容
+
+迫不及待要看看更漂亮的你了
+>model 1 又更朝模範美一步了
+`;
+
+const el = document.getElementById("type-text");
+let i = 0;
+
+function type(){
+  if(i <= TEXT.length){
+    el.textContent = TEXT.slice(0,i++);
+    setTimeout(type, 45);
+  }
+}
+type();
+/* ======================
+   BGM（本頁自動播放）
+====================== */
+const bgm = new Audio("makeup_music.mp3");
+bgm.loop = true;
+bgm.volume = 0.6;
+
+// 展場 / kiosk：等頁面完全載入再播
+window.addEventListener("load", () => {
+  bgm.play().catch(err => {
+    console.log("BGM play failed:", err);
+  });
+});
+
+// 每 0.5 秒記錄一次播放時間
+setInterval(() => {
+  if (!bgm.paused) {
+    localStorage.setItem("bgmTime", bgm.currentTime);
+  }
+}, 500);
+
+
+/* ======================
+   10 秒後自動進入美妝
+====================== */
+setTimeout(() => {
+  window.location.href = "makeup.html";
+}, 10000);
+
+</script>
+
+</body>
+</html>

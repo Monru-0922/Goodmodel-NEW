@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模範生 – 系統升級提示</title>
+
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  background:#000;
+  font-family:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",Arial,sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+}
+
+#viewport{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:1080px;
+  height:1920px;
+  transform:translate(-50%,-50%) scale(var(--scale-factor,1));
+  overflow:hidden;
+  background:#000;
+}
+
+.bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+#type-text{
+  position:absolute;
+  left:53%;
+  top:50%; /* 稍微往上移，留空間給提示框 */
+  transform:translateX(-50%);
+  width:70%;
+  color:#ffffff;
+  font-size:30px;
+  letter-spacing:5px;
+  line-height:50px;
+  font-weight:300;
+  white-space:pre-line;
+}
+
+/* 🟢 修改後的提示區樣式（保留原本的按鈕外觀） */
+#button-area {
+  position: absolute;
+  bottom: 250px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  width: 70%;
+  opacity: 0; 
+  transition: opacity 1s;
+}
+
+.action-info {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.8); /* 稍微加深邊框讓它更明顯 */
+  color: #fff;
+  padding: 30px 0;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 8px;
+  text-align: center;
+  backdrop-filter: blur(5px);
+  /* 加入呼吸燈動畫，引導使用者按下按鍵 */
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 5px rgba(255,255,255,0.2); }
+  50% { box-shadow: 0 0 20px rgba(255,255,255,0.4); border-color: rgba(255,255,255,1); }
+  100% { box-shadow: 0 0 5px rgba(255,255,255,0.2); }
+}
+
+</style>
+</head>
+
+<body>
+<div id="viewport">
+
+  <img class="bg" src="image/01.png">
+
+  <div id="type-text"></div>
+
+  <div id="button-area">
+    <div class="action-info">按下 白色按鍵 進入變美程序</div>
+  </div>
+
+</div>
+
+<script>
+  window.addEventListener("load", () => {
+  
+    /* ======================
+       9:16 SCALE
+    ====================== */
+    function resize(){
+      const s = Math.min(
+        window.innerWidth / 1080,
+        window.innerHeight / 1920
+      );
+      document.documentElement.style.setProperty("--scale-factor", s);
+    }
+    resize();
+    window.addEventListener("resize", resize);
+  
+    /* ======================
+       打字機
+    ====================== */
+    const TEXT = `
+   > 評分程序完成 
+   目前的分數僅是基礎外貌評估 
+   系統可以為你生成 「更精緻、更好看的樣貌」 
+   
+   想看看升級後的自己嗎？ 
+   
+   請點擊按鍵確認您的下一步：
+    `;
+    
+    const el = document.getElementById("type-text");
+    const btnArea = document.getElementById("button-area");
+    let i = 0;
+    let canJump = false; // 鎖定狀態，打完字才能跳轉
+
+    (function type(){
+      if(i <= TEXT.length){
+        el.textContent = TEXT.slice(0,i++);
+        setTimeout(type, 45);
+      } else {
+        btnArea.style.opacity = "1";
+        canJump = true; 
+      }
+    })();
+  
+    /* ======================
+       🟢 實體按鍵監聽 (Enter)
+    ====================== */
+    window.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.keyCode === 13) && canJump) {
+        canJump = false; // 防止重複觸發
+        location.href = 'step4.html';
+      }
+    });
+
+  });
+</script>
+  
+</body>
+</html>

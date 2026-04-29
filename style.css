@@ -1,0 +1,901 @@
+/* ===============================
+   Global
+=============================== */
+* { box-sizing: border-box; }
+
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: black;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --scale-factor: 1 !important; /* 強制重置縮放係數 */
+  transform: none !important;
+}
+/* 9:16 主視窗 */
+#ar-viewport {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  transform: none !important;
+  overflow: hidden;
+  background-color: black;
+  z-index: 0;
+}
+
+/* 讓 overlay 都吃滿畫布 */
+#camera-overlay,
+#scan-overlay,
+#detect-finish-overlay,
+#rating-overlay,
+#low-score-overlay,
+#filter-select-overlay,
+#photo-finish-overlay,
+#photo-off-overlay,
+#popup2-overlay,
+#popup3-overlay,
+#post-overlay,
+#intro2-container,
+.full-screen-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+/* 共用：兩種框的基本樣式 */
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 美妝框 & 文字框：一開始都先關掉，由 JS 控制 */
+.frame-makeup,
+.frame-text {
+  display: none;
+}
+
+/* ===============================
+   開場影片
+=============================== */
+.full-screen-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.media-content {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#loading-box{
+  position: absolute;
+  left: 43%;
+  top: 90%;              /* 在文字下方 */
+  transform: translateX(-40%);
+  width: 70%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #ff8c00;
+}
+
+#loading-text{
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+  font-size: 24px;
+}
+
+#progress-track{
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  overflow: hidden;
+}
+
+#progress-bar{
+  width: 0%;
+  height: 100%;
+  background:#ff8c00;
+  transition: width 0.2s linear;
+}
+
+
+#progress-wrap{
+  position:absolute;
+  left:20%;
+  bottom:260px;
+  transform:translateX(-50%);
+  width:70%;
+  height:8px;
+  border:1px solid rgba(255,255,255,0.25);
+  background:#0a0a0a;
+  overflow:hidden;
+}
+
+#progress-text{
+  margin-top:10px;
+  text-align:right;
+  font-size:24px;
+  color:rgba(255, 255, 255, 0.989);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#loading2-box{
+  position: absolute;
+  left: 43%;
+  top: 90%;              /* 在文字下方 */
+  transform: translateX(-40%);
+  width: 70%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #ff8c00;
+}
+
+#loading2-text{
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+  font-size: 24px;
+}
+
+#progress2-track{
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  overflow: hidden;
+}
+
+#progress2-bar{
+  width: 0%;
+  height: 100%;
+  background:#ff8c00;
+  transition: width 0.2s linear;
+}
+
+
+#progress2-wrap{
+  position:absolute;
+  left:20%;
+  bottom:260px;
+  transform:translateX(-50%);
+  width:70%;
+  height:8px;
+  border:1px solid rgba(255,255,255,0.25);
+  background:#0a0a0a;
+  overflow:hidden;
+}
+
+#progress2-text{
+  margin-top:10px;
+  text-align:right;
+  font-size:24px;
+  color:rgba(255, 255, 255, 0.989);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+@keyframes shimmer{
+  from{ background-position:0% 0; }
+  to{ background-position:200% 0; }
+}
+
+
+/* 第二段待機動畫預設關掉 */
+#intro2-container { display: none; }
+
+/* ===============================
+   AR Scene（MindAR）
+=============================== */
+/* 強制將被推開的攝影機拉回原位 */
+#ar-scene, 
+.a-canvas, 
+video {
+  transform: scaleX(-1) !important;
+  position: fixed !important;
+  left: 0 !important; /* 👈 關鍵：強制覆蓋 -1086px，歸零 */
+  top: 0 !important;
+  width: 100vw !important;/* 👈 寬度改為滿版 */
+  height: 100vh !important;/* 👈 高度改為滿版 */
+  z-index: 0 !important;
+}
+
+/* 確保父容器不會限制到 A-Frame */
+#ar-viewport {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: none; /* 移除 translate(-50%, -50%)，因為我們已經用全螢幕佈局 */
+}
+#typewriter-text{
+  position:absolute;
+  left:53%;
+  top:45%;
+  transform:translateX(-50%);
+  width:70%;
+  color:#fff;
+
+  font-family: -apple-system, "PingFang TC", "PingFangTC-Regular",
+               "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+
+  font-size:30px;
+  letter-spacing:5px;   /* ← 你指定 */
+  line-height:44px;      /* 24px + 約20px 行距 */
+  font-weight:300;
+
+  white-space:pre-line;
+}
+
+#typewriter2-text{
+  position:absolute;
+  left:53%;
+  top:50%;
+  transform:translateX(-50%);
+  width:70%;
+  color:#fff;
+
+  font-family: -apple-system, "PingFang TC", "PingFangTC-Regular",
+               "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+
+  font-size:30px;
+  letter-spacing:5px;   /* ← 你指定 */
+  line-height:44px;      /* 24px + 約20px 行距 */
+  font-weight:300;
+
+  white-space:pre-line;
+}
+
+/* ===============================
+   02：對準方框（主攝影 UI 框）
+=============================== */
+#camera-overlay {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+#camera-overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+#camera-fade {
+  position: absolute;
+  inset: 0;
+  background: black;
+  z-index: 999;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+}
+
+#camera-fade.show {
+  opacity: 0;
+}
+
+/* ===============================
+   掃描畫面：倒數 + 橫桿（疊在 04 上）
+=============================== */
+/* 確保掃描層可以顯示 */
+#scan-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100; /* 提高層級，確保在所有 UI 之上 */
+  background: transparent
+}
+
+canvas.a-canvas {
+    z-index: 1 !important; /* 確保它在最底層 */
+}
+#ar-viewport {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 0;
+}
+#scan-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#face-lock-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+}
+
+#face-rect {
+  position: absolute;
+  border: 1px solid #ff0000; /* 強調紅框實線 */
+  width: 500px;
+  height: 500px;
+  display: none; /* JS 會把它改成 block */
+
+}
+
+#random-data {
+  position: absolute;
+  top: -35px;
+  left: 0;
+  text-align: center;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 24px; /* 字體放大 */
+  font-weight: lighter;
+  letter-spacing: 2px;
+  white-space: nowrap; /* 強制不折行 */
+}
+
+/* 畫面背景閃現 (全螢幕) */
+.glitch-active {
+  animation: bg-flash 0.5s infinite;
+}
+
+@keyframes bg-flash {
+  0% { background: rgba(255, 255, 255, 0); }
+  100% { background:black; }
+  0% { background: rgba(255, 255, 255, 0.05); }
+}
+
+#scan-line-h {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px; /* 1px 細線 */
+  background: #ff0000;
+  box-shadow: 0 0 5px #ff0000; /* 增加發光 */
+  z-index: 90;
+}
+
+#scan-line-v {
+  position: absolute;
+  top: 0;
+  width: 1px; /* 1px 細線 */
+  height: 100%;
+  background: #ff0000;
+  box-shadow: 0 0 5px #ff0000; /* 增加發光 */
+  z-index: 90;
+}
+/* 濾鏡階段中央倒數 */
+#mk-countdown {
+  position: absolute;
+  left: 50%;
+  top: 230px;   
+  transform: translate(-50%, -50%);
+  font-size: 100px;
+  font-weight: 300;
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(0,0,0,.8);
+  z-index: 9999;
+  pointer-events: none;
+
+  font-family: -apple-system, "PingFang TC", "PingFangTC-Regular",
+               "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+}
+
+
+/* ===============================
+   04：正在生成評分表
+=============================== */
+#detect-finish-overlay {
+  display: none;
+  justify-content: center;
+  align-items: right;
+  z-index: 9999;
+  transform: translateY(300%);
+  
+}
+
+#detect-finish-overlay img {
+  width: 55%;
+  height: 55%;
+  object-fit: contain;
+}
+.glitch {
+  animation: glitch 0.8s infinite;
+}
+
+@keyframes glitch {
+  0% { opacity: 1; }
+  20% { opacity: 0; }
+  40% { opacity: 1; }
+  60% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* ===============================
+   05 評分表 + 06 跳出視窗1
+=============================== */
+#rating-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: black;
+  display: none;    /* 初始隱藏 */
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;     /* 確保高於攝影機層 */
+}
+#rating-bg {
+    height: 100vh; /* 依照電視高度鋪滿 */
+    width: auto;
+    position: relative;
+    display: block;
+    z-index: 1; /* 底圖在下層 */
+}
+/* 35x46 照片框 */
+#user-photo-container {
+    position: absolute;
+    /* 這裡的 top/left 是相對於 100vh 高度的比例 */
+    top: 11.5%; 
+    left: 7%; 
+
+    width: 113mm; 
+    height: 150mm; 
+
+    z-index: 100;      /* 確保在底圖之上 */
+    overflow: hidden;
+
+    /* 🔴 關鍵排查：先加一個鮮豔的邊框，看看它有沒有疊在正確的位置 */
+    border: 3px !important; 
+    background-color: rgba(255, 0, 0, 0.2) !important;
+    
+    display: block !important;
+}
+#user-captured-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;   /* 確保圖片顯示 */
+}
+/* 設定五官框的共同樣式 */
+.feature-box {
+    position: absolute !important;
+    z-index: 200 !important;
+    background-color: transparent !important; /* 👈 改回透明 */
+    border: none !important; /* 👈 如果不需要框線了就拿掉 */
+    pointer-events: none;
+}
+.crop-overlay {
+    position: absolute;
+    border: 1px solid rgba(0, 255, 255, 0.5); /* 暫時顯示框線方便你對位 */
+    background-size: cover;
+}
+
+/* 根據你的截圖，對準右側那三個梯形連結的框 */
+#crop-eye { top: 180px; left: 630px; width: 240px; height: 150px; }
+#crop-nose { top: 410px; left: 757px; width: 240px; height: 150px; }
+#crop-mouth { top: 636px; left: 683px; width: 240px; height: 150px; }
+
+/* 統一設定 HUD 疊加圖的樣式 */
+.hud-deco {
+  position: absolute;
+  z-index: 150; /* 確保在底圖和五官畫布之上，但可能需要低於左側照片容器 */
+  pointer-events: none; /* 防止干擾點擊 */
+}
+
+/* 🟢 個別微調位置和大小 */
+
+/* 01.png 放在左側體驗者容貌照片上 */
+#hud-face {
+  top: 40px; /* 對齊照片容器頂部 */
+  left:-180px; /* 對齊照片容器左側 */
+  width: 1000px; /* 對齊照片容器寬度 */
+  height: 900px; /* 對齊照片容器高度 */
+  z-index: 300; /* 確保在照片 container 裡面，但高於照片 img */
+}
+
+/* 02.png 放在眼睛裁切畫布上 */
+#hud-eye {
+  top: 160px; /* 對齊 #crop-eye 的 top */
+  left: 540px; /* 對齊 #crop-eye 的 left */
+  width: 200px; /* 對齊 #crop-eye 的 width */
+  height: 120px; /* 對齊 #crop-eye 的 height */
+  z-index: 300
+}
+
+/* 03.png 放在鼻子裁切畫布上 */
+#hud-nose {
+  top: 360px; /* 對齊 #crop-nose 的 top */
+  left: 900px; /* 對齊 #crop-nose 的 left */
+  width: 170px; /* 對齊 #crop-nose 的 width */
+  height: 150px; /* 對齊 #crop-nose 的 height */
+  z-index: 300
+}
+
+/* 04.png 放在嘴巴裁切畫布上 */
+#hud-mouth {
+  top: 570px; /* 對齊 #crop-mouth 的 top */
+  left: 610px; /* 對齊 #crop-mouth 的 left */
+  width: 200px; /* 對齊 #crop-mouth 的 width */
+  height: 120px; /* 對齊 #crop-mouth 的 height */
+  z-index: 300 
+}
+
+/* ===============================
+   濾鏡選擇畫面（濾鏡一 / 濾鏡二共用外框）
+=============================== */
+#filter-select-overlay {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  background: #000;
+}
+
+/* 手機框 */
+#filter-select-overlay .phone {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* 拍攝區 */
+.camera-area { position: absolute; inset: 0; }
+
+/* camera-area 裡的每個元素都鋪滿 */
+.camera-area > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* mk-video 只拿來給 FaceMesh 用，不顯示 */
+#mk-video { opacity: 0; }
+
+/* 美妝結果畫在 mk-canvas 上 */
+#mk-canvas { z-index: 2; }
+
+/* 額外光暈：眼睛 */
+.makeup-eyes {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 43% 40%, rgba(255,170,210,.38), transparent 26%),
+    radial-gradient(circle at 57% 40%, rgba(255,170,210,.38), transparent 26%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* 額外光暈：嘴唇 */
+.makeup-lips {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 64%, rgba(190,20,60,.55), transparent 22%),
+    radial-gradient(circle at 50% 66%, rgba(255,120,170,.45), transparent 28%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 7;
+}
+
+/* 文字濾鏡的三層：背景 / 影片 / PNG */
+#filter-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 3;
+}
+
+#filter-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  z-index: 1;
+}
+
+#faceOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.frame-text { z-index: 4; }
+
+/* ================================
+   下方濾鏡圓圈整排（濾鏡一）
+================================ */
+#filter-select-overlay .filters-wrapper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+#filter-select-overlay .filters-track {
+  display: flex;
+  gap: 70px;
+}
+
+#filter-select-overlay .filter-item {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  transform: translateY(10px);
+}
+
+#filter-select-overlay .filter-thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 55%;
+}
+
+#filter-select-overlay .filter-item.active {
+  box-shadow: 0 0 0 4px #fff;
+}
+
+/* mk-stage 下方 5 顆 */
+#mk-stage { position: relative; }
+
+#mk-stage .nav {
+  position: absolute;
+  left: 50%;
+  bottom: 190px;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 65%;
+  max-width: 720px;
+  gap: 70px;
+  z-index: 20;
+}
+
+#mk-stage .nav div {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#mk-stage .nav img {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  object-fit: cover;
+  pointer-events: auto;
+}
+
+/* ===============================
+   Makeup Good Model 版 UI
+=============================== */
+.stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  transform-origin: top left;
+}
+
+.stage video,
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ===============================
+   TV 開機 / 關機（套用在 typeScreen / type2Screen）
+=============================== */
+
+/* 預設關閉狀態（避免殘影） */
+.tv-on,
+.tv-off {
+  animation-fill-mode: forwards;
+}
+
+/* ====== 開機：從一道水平亮線 → 展開成螢幕 ====== */
+.tv-on {
+  animation: tvOn 0.45s ease-out forwards;
+}
+
+@keyframes tvOn {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.02) scaleX(0.6);
+    filter: brightness(3) contrast(2);
+  }
+  40% {
+    opacity: 1;
+    transform: scaleY(0.08) scaleX(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1);
+    filter: brightness(1) contrast(1);
+  }
+}
+
+/* ====== 關機：畫面收縮成一道亮線後熄滅 ====== */
+.tv-off {
+  animation: tvOff 0.45s ease-in forwards;
+}
+
+@keyframes tvOff {
+  0% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1);
+  }
+  40% {
+    transform: scaleY(0.08) scaleX(0.9);
+    filter: brightness(2);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(0.02) scaleX(0.6);
+    filter: brightness(3) contrast(2);
+  }
+}
+
+
+/* ===============================
+   Z-INDEX SYSTEM (FINAL)
+   貼在 style.css 最下面，覆蓋前面的設定
+=============================== */
+#ar-scene { z-index: 1; }
+#camera-overlay { z-index: 10; }
+#detect-finish-overlay { z-index: 20; }
+#scan-overlay          { z-index: 21; }
+#rating-overlay    { z-index: 30; }
+#low-score-overlay { z-index: 40; }
+#filter-select-overlay { z-index: 200; }
+#photo-finish-overlay { z-index: 500; }
+#photo-off-overlay    { z-index: 500; }
+#popup2-overlay { z-index: 700; }
+#popup3-overlay { z-index: 700; }
+#intro2-container { z-index: 800; }
+#post-overlay { z-index: 900; }
+
+#photo-finish-overlay .photo-finish-bg { z-index: 1; }
+#photo-finish-overlay .photo-finish-frame{
+  z-index: 2;
+  pointer-events: none;
+}
+#intro-container,
+#intro-container video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* 保險做法：重要 overlay 用 fixed */
+#photo-finish-overlay,
+#photo-off-overlay,
+#popup2-overlay,
+#popup3-overlay,
+#intro2-container,
+#post-overlay {
+  position: fixed;
+  inset: 0;
+
+}
+#tv-blackout {
+  position: fixed;
+  inset: 0;
+  background:black;
+
+  /* ⭐ 預設為透明＋低層級 */
+  opacity:0;
+  pointer-events:none;
+  z-index: 15;
+
+  transition:opacity .28s linear;
+}
+
+/* ⭐ 僅在轉場期間 → 升到最上層 + 蓋黑 */
+#tv-blackout.active {
+  z-index: 999999;
+  opacity:1;
+}
+/* 05.png 影印洗出效果（上→下＋段落抖動） */
+#rating-overlay.fax-print{
+  position: relative;
+
+  /* 標準遮罩（避免被標紅） */
+  mask-image: linear-gradient(#000, #000);
+  mask-repeat: no-repeat;
+  mask-size: 100% 0%;
+
+  /* WebKit 實際驅動畫面 */
+  -webkit-mask-image: linear-gradient(#000, #000);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 0%;
+
+  animation:
+    faxTopDown 4.6s steps(24) forwards,
+    faxJitter 4.6s steps(24) alternate;
+}
+@keyframes faxTopDown{
+  from { 
+    mask-size: 100% 0%;
+    -webkit-mask-size: 100% 0%;
+  }
+  to   { 
+    mask-size: 100% 100%;
+    -webkit-mask-size: 100% 100%;
+  }
+}
+@keyframes faxJitter{
+  0%   { transform: translateX(-2px); }
+  40%  { transform: translateX(2px); }
+  80%  { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+/* ===============================
+   AR Scene & Camera (修正版)
+=============================== */
+/* 🟢 只針對攝影機進行鏡像，避開開場影片 */
+video:not(#intro-video), 
+.a-canvas {
+  transform: scaleX(-1) !important; /* 保持鏡像 */
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important;
+  z-index: 0 !important;
+}
+
+/* 🟢 開場影片專屬設定：絕對不翻轉 */
+#intro-video {
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 100 !important; /* 確保它在最前面 */
+}
+
+#intro-container {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  transform: none !important;
+}
